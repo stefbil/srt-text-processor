@@ -1,0 +1,69 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    # Build for both Apple Silicon (arm64) and Intel (x86_64)
+    strategy:
+      matrix:
+        runner: [macos-14, macos-13]   # 14=Apple Silicon, 13=Intel
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'   # any 3.x is fine for tkinter
+
+      - name: Upgrade pip & install deps
+        run: |
+          python -m pip install --upgrade pip
+          # If you have external deps, list them in requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Build .app with PyInstaller
+        run: |
+          # Adjust script name if not main.py
+          pyinstaller --windowed --name "SRT Text Processor" \
+            ${GITHUB_WORKSPACE}/main.py \
+            ${ICON:+--icon ${ICON}} \
+            --osx-bundle-identifier com.example.srtprocessor
+        env:
+          # If you added an icon.icns at repo root, this picks it up.
+          ICON: icon.icns
+
+      - name: Show build outputs
+        run: |
+          echo "Dist contents:"
+          ls -la dist
+          echo
+          echo "App bundle contents:"
+          ls -la "dist/SRT Text Processor.app" || true
+
+      - name: Make DMG (optional)
+        run: |
+          brew install create-dmg
+          create-dmg "SRT Text Processor-${{ matrix.runner }}.dmg" "dist/SRT Text Processor.app"
+        continue-on-error: true
+
+      - name: Zip .app for easy download
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "dist/SRT Text Processor.app" \
+            "SRT-Text-Processor-${{ matrix.runner }}.zip"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: "macOS-${{ matrix.runner }}-artifacts"
+          path: |
+            SRT-Text-Processor-${{ matrix.runner }}.zip
+            SRT Text Processor-${{ matrix.runner }}.dmg
+          if-no-files-found: warn
