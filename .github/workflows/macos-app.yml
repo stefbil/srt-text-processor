@@ -29,16 +29,26 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pyinstaller
 
+      - name: Discover optional icon
+        run: |
+          if [ -f icon.icns ]; then
+            echo "ICON=icon.icns" >> "$GITHUB_ENV"
+            echo "Using custom icon.icns"
+          else
+            echo "No icon.icns found; continuing without an icon."
+          fi
+
       - name: Build .app with PyInstaller
         run: |
-          # Adjust script name if not main.py
-          pyinstaller --windowed --name "SRT Text Processor" \
-            ${GITHUB_WORKSPACE}/main.py \
-            ${ICON:+--icon ${ICON}} \
-            --osx-bundle-identifier com.example.srtprocessor
-        env:
-          # If you added an icon.icns at repo root, this picks it up.
-          ICON: icon.icns
+          # Build flags
+          ICON_FLAG=""
+          if [ -n "${ICON:-}" ]; then ICON_FLAG="--icon ${ICON}"; fi
+
+          pyinstaller --noconfirm --windowed --name "SRT Text Processor" \
+            ${ICON_FLAG} \
+            --osx-bundle-identifier com.example.srtprocessor \
+            main.py
+
 
       - name: Show build outputs
         run: |
