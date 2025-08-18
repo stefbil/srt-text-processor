@@ -21,7 +21,6 @@ def select_file():
     if filepath:
         filepath_label.config(text=filepath)
 
-# --- MODIFIED FUNCTION TO PROCESS FILE CORRECTLY ---
 def process_and_save_file():
     """Processes only the subtitle text lines in the selected SRT file."""
     input_path = filepath_label.cget("text")
@@ -34,23 +33,16 @@ def process_and_save_file():
     output_path = f"{base_name}_processed{extension}"
 
     try:
-        # Open both files at once
         with open(input_path, 'r', encoding='utf-8') as infile, \
              open(output_path, 'w', encoding='utf-8') as outfile:
 
-            # Read the file line by line
             for line in infile:
-                # Identify timestamp lines (they contain '-->')
-                # and sequence number lines (they are just digits).
                 is_timestamp = '-->' in line
                 is_sequence_number = line.strip().isdigit()
 
                 if is_timestamp or is_sequence_number:
-                    # If it's a timestamp or number, write it to the new file without changes.
                     outfile.write(line)
                 else:
-                    # Otherwise, it's a subtitle text line or a blank line.
-                    # Process this line to remove accents and punctuation.
                     processed_line = process_text(line)
                     outfile.write(processed_line)
         
@@ -59,10 +51,10 @@ def process_and_save_file():
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
 
-# --- GUI Setup (No changes here) ---
+# --- GUI Setup ---
 
 root = tk.Tk()
-root.title("SRT Text Processor")
+root.title("Babaoi")
 root.geometry("500x200")
 
 frame = tk.Frame(root, padx=15, pady=15)
@@ -76,5 +68,9 @@ filepath_label.pack(pady=5)
 
 process_button = tk.Button(frame, text="2. Process and Save", command=process_and_save_file)
 process_button.pack(fill='x', pady=10)
+
+# --- Tiny credit text bottom-left ---
+credit_label = tk.Label(root, text="by stefbil", font=("Arial", 8), fg="gray")
+credit_label.pack(side="left", anchor="s", padx=5, pady=5)
 
 root.mainloop()
